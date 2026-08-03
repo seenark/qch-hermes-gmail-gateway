@@ -1,0 +1,28 @@
+// Better-T-Stack project metadata
+//
+// Keep this file to use the `add` command.
+// Add addons: bunx create-better-t-stack@latest add
+//
+// Docs: https://better-t-stack.dev/docs
+// Stack Builder: https://better-t-stack.dev/new
+
+{
+  "$schema": "https://r2.better-t-stack.dev/schema.json",
+  "version": "3.38.1",
+  "createdAt": "2026-08-03T10:00:36.965Z",
+  "reproducibleCommand": "bun create better-t-stack@latest qch-hermes --frontend tanstack-router --backend elysia --runtime bun --database sqlite --orm prisma --api none --auth none --payments none --addons vite-plus --examples none --db-setup none --web-deploy docker --server-deploy none --git --package-manager bun --install",
+  "database": "sqlite",
+  "orm": "prisma",
+  "backend": "elysia",
+  "runtime": "bun",
+  "frontend": ["tanstack-router"],
+  "addons": ["vite-plus"],
+  "examples": [],
+  "auth": "none",
+  "payments": "none",
+  "packageManager": "bun",
+  "dbSetup": "none",
+  "api": "none",
+  "webDeploy": "docker",
+  "serverDeploy": "none",
+}

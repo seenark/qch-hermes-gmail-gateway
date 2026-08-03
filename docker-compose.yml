@@ -1,0 +1,22 @@
+name: qch-hermes
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_SERVER_URL: http://localhost:3000
+    init: true
+    ports:
+      - "3001:80"
+    env_file:
+      - path: apps/web/.env
+        required: false
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped

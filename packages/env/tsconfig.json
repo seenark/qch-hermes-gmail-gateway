@@ -1,0 +1,3 @@
+{
+  "extends": "@qch-hermes/config/tsconfig.base.json"
+}
