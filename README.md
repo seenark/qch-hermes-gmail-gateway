@@ -215,6 +215,131 @@ grantedScopes
 - Dockerfile หรือ Docker image layer
 - logs
 
+## Customer deployment from Docker Hub
+
+ลูกค้าไม่จำเป็นต้อง clone source code หรือ install Bun ลูกค้าสามารถ pull image จาก Docker Hub แล้วรัน container โดยตรงได้
+
+Image:
+
+```text
+hadesgod/qch-hermes-gmail-gateway:latest
+```
+
+### Option A: Docker Compose สำหรับลูกค้า
+
+ดาวน์โหลดไฟล์ customer Compose และ environment template:
+
+```bash
+mkdir qch-hermes-gmail-gateway
+cd qch-hermes-gmail-gateway
+
+curl -fsSLO https://raw.githubusercontent.com/seenark/qch-hermes-gmail-gateway/main/docker-compose.customer.yml
+curl -fsSLO https://raw.githubusercontent.com/seenark/qch-hermes-gmail-gateway/main/apps/server/.env.docker.example
+mv .env.docker.example .env
+mkdir -p data
+```
+
+แก้ `.env` ก่อนเริ่ม โดยใส่ Google OAuth credentials, encryption key และ MCP gateway key:
+
+```env
+NODE_ENV=production
+ALLOW_ANY_VERIFIED_GOOGLE_ACCOUNT=false
+GOOGLE_OAUTH_CLIENT_ID=ลูกค้าใส่ค่าจริง
+GOOGLE_OAUTH_CLIENT_SECRET=ลูกค้าใส่ค่าจริง
+GOOGLE_OAUTH_REDIRECT_URI=https://gmail.example.com/oauth/google/callback
+GOOGLE_ALLOWED_DOMAIN=customer.example.com
+TOKEN_ENCRYPTION_KEY=สร้างค่า random ใหม่
+MCP_GATEWAY_KEY=สร้างค่า random ใหม่
+```
+
+ใน Google Cloud Console ต้อง register redirect URI เดียวกันแบบ exact match ตัวอย่างด้านบน
+
+เริ่มระบบ:
+
+```bash
+docker compose -f docker-compose.customer.yml pull
+docker compose -f docker-compose.customer.yml up -d
+```
+
+ตรวจสถานะ:
+
+```bash
+docker compose -f docker-compose.customer.yml ps
+curl -fsS http://localhost:3300/healthz
+```
+
+เปิด web UI ที่ `http://localhost:3300` หรือ public HTTPS URL ของ reverse proxy
+
+ถ้า deploy หลัง reverse proxy ให้ใช้ HTTPS public URL ที่ proxy ส่งต่อมายัง container port `3300` และตั้งค่าใน `.env` ให้ตรงกัน:
+
+```env
+CORS_ORIGIN=https://gmail.example.com
+GOOGLE_OAUTH_REDIRECT_URI=https://gmail.example.com/oauth/google/callback
+```
+
+### Option B: Docker CLI โดยตรง
+
+หากใช้ Docker CLI โดยไม่ใช้ Compose ให้ดาวน์โหลดและแก้ `.env` template ตามขั้นตอน OAuth ด้านบนก่อน แล้วใช้คำสั่งต่อไปนี้:
+
+```bash
+mkdir -p qch-hermes-data
+docker pull hadesgod/qch-hermes-gmail-gateway:latest
+
+docker run -d \\
+  --name qch-hermes-gmail-gateway \\
+  --restart unless-stopped \\
+  --env-file .env \\
+  -e DATABASE_URL=file:/data/local.db \\
+  -e PORT=3300 \\
+  -e WEB_DIST_DIR=/app/public \\
+  -p 3300:3300 \\
+  -v "$PWD/qch-hermes-data:/data" \\
+  hadesgod/qch-hermes-gmail-gateway:latest
+```
+
+ดู logs และหยุด container:
+
+```bash
+docker logs -f qch-hermes-gmail-gateway
+docker stop qch-hermes-gmail-gateway
+```
+
+### Updating an existing customer deployment
+
+Database อยู่ใน bind mount จึงไม่ควรถูกลบตอน update:
+
+```bash
+docker compose -f docker-compose.customer.yml pull
+docker compose -f docker-compose.customer.yml up -d
+```
+
+ก่อน update ควร backup ทั้ง database และ encryption key:
+
+```bash
+cp data/local.db "data/local.db.backup.$(date +%Y%m%d%H%M%S)"
+chmod 600 .env
+```
+
+ห้ามใช้ `docker compose down -v` และห้ามเปลี่ยน `TOKEN_ENCRYPTION_KEY` โดยไม่มีกระบวนการ key rotation ที่รองรับ เพราะ refresh token เดิมจะถอดรหัสไม่ได้
+
+### Customer operations
+
+```bash
+# logs
+docker compose -f docker-compose.customer.yml logs -f app
+
+# status
+docker compose -f docker-compose.customer.yml ps
+
+# stop without deleting data
+docker compose -f docker-compose.customer.yml down
+
+# start again
+docker compose -f docker-compose.customer.yml up -d
+```
+
+ลูกค้าควรจำกัดสิทธิ์ของเครื่องที่เก็บ `.env`, `data/local.db` และ `TOKEN_ENCRYPTION_KEY` ผู้ใช้งาน MCP ไม่ควรได้รับค่า Google client secret, refresh token หรือ encryption key
+
 ## MCP connection
 
 MCP endpoint:

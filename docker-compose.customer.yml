@@ -1,0 +1,30 @@
+name: qch-hermes-gmail-gateway
+
+services:
+  app:
+    image: hadesgod/qch-hermes-gmail-gateway:latest
+    init: true
+    ports:
+      - "3300:3300"
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      DATABASE_URL: file:/data/local.db
+      PORT: 3300
+      WEB_DIST_DIR: /app/public
+    volumes:
+      - ./data:/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "fetch('http://127.0.0.1:3300/healthz').then(r => { if (!r.ok) process.exit(1) })",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
