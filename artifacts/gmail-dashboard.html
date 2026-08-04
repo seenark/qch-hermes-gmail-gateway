@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>QCH-Hermes · Email Briefing</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --ink: #152235;
+        --muted: #617084;
+        --line: #dce4ed;
+        --card: #fff;
+        --navy: #10243b;
+        --blue: #2f6fed;
+        --sky: #eaf2ff;
+        --amber: #b86b00;
+        --amberbg: #fff4d8;
+        --red: #b42318;
+        --redbg: #fff0ee;
+        --green: #177245;
+        --greenbg: #e8f7ef;
+        --purple: #6941c6;
+        --purplebg: #f2edff;
+        --shadow: 0 12px 35px #203b5a12;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          Inter,
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        line-height: 1.55;
+      }
+      main {
+        max-width: 1180px;
+        margin: auto;
+        padding: 34px 22px 70px;
+      }
+      .top {
+        display: flex;
+        justify-content: space-between;
+        gap: 25px;
+        align-items: flex-start;
+        margin-bottom: 30px;
+      }
+      .kicker {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--blue);
+      }
+      h1 {
+        font-size: clamp(32px, 5vw, 58px);
+        line-height: 1.04;
+        letter-spacing: -0.055em;
+        margin: 8px 0 12px;
+        max-width: 780px;
+      }
+      .lead {
+        color: var(--muted);
+        max-width: 720px;
+        margin: 0;
+      }
+      .asof {
+        background: var(--navy);
+        color: #fff;
+        border-radius: 14px;
+        padding: 14px 17px;
+        min-width: 205px;
+        font-size: 12px;
+      }
+      .asof strong {
+        display: block;
+        font-size: 15px;
+        margin: 4px 0;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        padding: 22px;
+      }
+      .section {
+        margin-top: 18px;
+      }
+      .section-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 15px;
+        margin-bottom: 13px;
+      }
+      .section-head h2 {
+        font-size: 20px;
+        letter-spacing: -0.025em;
+        margin: 0;
+      }
+      .section-head p {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 3px 0 0;
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .grid3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 13px;
+      }
+      .label {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: 4px 9px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+      }
+      .urgent {
+        background: var(--redbg);
+        color: var(--red);
+      }
+      .action {
+        background: var(--amberbg);
+        color: var(--amber);
+      }
+      .info {
+        background: var(--sky);
+        color: var(--blue);
+      }
+      .learn {
+        background: var(--purplebg);
+        color: var(--purple);
+      }
+      .ok {
+        background: var(--greenbg);
+        color: var(--green);
+      }
+      .queue {
+        display: grid;
+        gap: 10px;
+      }
+      .queue-item {
+        border-left: 4px solid var(--red);
+        background: #fffafa;
+        padding: 14px 16px;
+        border-radius: 0 11px 11px 0;
+      }
+      .queue-item.amber {
+        border-color: #e8a100;
+        background: #fffdf7;
+      }
+      .queue-item strong {
+        display: block;
+        font-size: 14px;
+      }
+      .queue-item p {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 4px 0 0;
+      }
+      .queue-item .next {
+        color: var(--ink);
+        font-weight: 700;
+        margin-top: 7px;
+      }
+      .account-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: flex-start;
+        margin-bottom: 14px;
+      }
+      .account-head h3 {
+        margin: 0;
+        font-size: 16px;
+      }
+      .address {
+        color: var(--blue);
+        font:
+          12px ui-monospace,
+          SFMono-Regular,
+          monospace;
+        margin-top: 3px;
+      }
+      .account-note {
+        font-size: 13px;
+        color: var(--muted);
+        margin: 0;
+      }
+      .mail {
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        padding: 16px;
+        background: #fff;
+        margin-top: 11px;
+      }
+      .mail:first-child {
+        margin-top: 0;
+      }
+      .mail-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+      }
+      .mail h3 {
+        font-size: 15px;
+        line-height: 1.35;
+        margin: 7px 0 3px;
+      }
+      .from {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .date {
+        font-size: 11px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .summary {
+        font-size: 13px;
+        margin: 10px 0 0;
+      }
+      .takeaway {
+        background: #f7f9fc;
+        border-radius: 9px;
+        padding: 9px 11px;
+        margin-top: 11px;
+        font-size: 12px;
+      }
+      .takeaway b {
+        color: var(--blue);
+      }
+      .citation {
+        font:
+          11px ui-monospace,
+          SFMono-Regular,
+          monospace;
+        color: #718096;
+        margin-top: 10px;
+        word-break: break-word;
+      }
+      .citation b {
+        color: var(--blue);
+      }
+      .timeline {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+      .event {
+        border-top: 4px solid var(--blue);
+        padding: 14px;
+        background: #f8fbff;
+        border-radius: 0 0 12px 12px;
+      }
+      .event:nth-child(2) {
+        border-color: #f0a000;
+      }
+      .event:nth-child(3) {
+        border-color: var(--purple);
+      }
+      .event time {
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--blue);
+      }
+      .event h3 {
+        font-size: 14px;
+        line-height: 1.35;
+        margin: 7px 0;
+      }
+      .event p {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 0;
+      }
+      .callout {
+        display: grid;
+        grid-template-columns: 34px 1fr;
+        gap: 11px;
+        align-items: start;
+      }
+      .callout-icon {
+        background: var(--navy);
+        color: #fff;
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        font-weight: 900;
+      }
+      .callout strong {
+        font-size: 14px;
+      }
+      .callout p {
+        font-size: 13px;
+        color: var(--muted);
+        margin: 3px 0 0;
+      }
+      .empty {
+        color: var(--muted);
+        font-size: 13px;
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        padding: 14px;
+      }
+      .method {
+        font-size: 11px;
+        color: var(--muted);
+        border-top: 1px solid var(--line);
+        margin-top: 20px;
+        padding-top: 14px;
+      }
+      .footer {
+        color: #8290a1;
+        font-size: 11px;
+        margin-top: 25px;
+      }
+      @media (max-width: 850px) {
+        .top {
+          display: block;
+        }
+        .asof {
+          width: max-content;
+          margin-top: 18px;
+        }
+        .grid2,
+        .grid3,
+        .timeline {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 560px) {
+        main {
+          padding: 25px 14px 50px;
+        }
+        .card {
+          padding: 16px;
+        }
+        .mail-head {
+          display: block;
+        }
+        .date {
+          display: block;
+          margin-top: 5px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="top">
+        <div>
+          <div class="kicker">QCH-Hermes · Content-first email briefing</div>
+          <h1>อีเมลที่เจอวันนี้ บอกอะไรเราบ้าง?</h1>
+          <p class="lead">
+            สรุปจากข้อความจริงของทั้ง 2 mailbox — เน้นสิ่งที่ต้องตรวจสอบ, วันที่ต้องตัดสินใจ
+            และสาระที่นำไปใช้ได้ ไม่ใช่แค่กราฟจำนวนเมล
+          </p>
+        </div>
+        <div class="asof">
+          ช่วงหลัก<strong>24 ชั่วโมงล่าสุด</strong><span>Personal context: 7 วัน</span>
+        </div>
+      </header>
+
+      <section class="grid2 section">
+        <article class="card">
+          <div class="section-head">
+            <div>
+              <h2>ต้องทำก่อน</h2>
+              <p>มี 1 รายการที่เกี่ยวกับความปลอดภัยโดยตรง</p>
+            </div>
+            <span class="label urgent">HIGH PRIORITY</span>
+          </div>
+          <div class="queue">
+            <div class="queue-item">
+              <strong>ตรวจว่า login บน Mac เป็นของคุณหรือไม่</strong>
+              <p>
+                Google แจ้งว่าพบบัญชี
+                <b>atiwat@aquilastudio.net</b> ลงชื่อเข้าใช้ครั้งใหม่จากอุปกรณ์ Mac
+              </p>
+              <p class="next">
+                ถ้าไม่ใช่คุณ → เปิด Google Security Checkup และเปลี่ยนรหัสผ่าน/ตรวจ session ทันที ·
+                ถ้าใช่คุณ → ไม่ต้องดำเนินการ
+              </p>
+              <div class="citation"><b>[A3]</b> Google · 03 Aug 2026 · msg 19fc708fc2e10a56</div>
+            </div>
+            <div class="queue-item amber">
+              <strong>ตัดสินใจว่าจะลงทะเบียน webinar หรือไม่</strong>
+              <p>
+                Free Webinar เรื่อง Claude Code จัดวันที่ 20 Aug 2569 เวลา 14:00–15:30 น. ผ่าน Zoom
+              </p>
+              <p class="next">ถ้าสนใจ: ลงทะเบียนก่อนวันงาน · ไม่มีค่าใช้จ่าย</p>
+              <div class="citation">
+                <b>[A1]</b> IMC Institute · 04 Aug 2026 · msg 19fca4decee81743
+              </div>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <div class="section-head">
+            <div>
+              <h2>สรุปเชิงภาพรวม</h2>
+              <p>ข้อสังเกตจากเนื้อหา ไม่ใช่แค่จำนวน</p>
+            </div>
+          </div>
+          <div class="callout">
+            <div class="callout-icon">1</div>
+            <div>
+              <strong>Company inbox มีสาระ AI/dev ปนกับ marketing</strong>
+              <p>
+                ใน 4 ฉบับล่าสุด มี 3 ฉบับเป็นข้อเสนอ/ประชาสัมพันธ์ และ 1 ฉบับเป็น security alert
+                ดังนั้น priority แรกควรแยก security ออกจาก promotion
+                ไม่ควรอ่านตามลำดับเวลาอย่างเดียว
+              </p>
+            </div>
+          </div>
+          <div class="callout" style="margin-top: 16px">
+            <div class="callout-icon">2</div>
+            <div>
+              <strong>Personal inbox ไม่มีความเคลื่อนไหวใน 24 ชั่วโมง</strong>
+              <p>
+                ไม่พบ received หรือ sent ในช่วงหลัก แต่ย้อนหลัง 7 วันมีเนื้อหาเกี่ยวกับ OpenAI
+                pricing และ Kaggle AI Agents ซึ่งเป็น context ไม่ใช่งานเร่งด่วน
+              </p>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="card section">
+        <div class="section-head">
+          <div>
+            <h2>ปฏิทิน / วันที่ที่ดึงออกจากเนื้อหาอีเมล</h2>
+            <p>สิ่งที่อาจต้องใส่ calendar หรือใช้ประกอบการตัดสินใจ</p>
+          </div>
+          <span class="label action">ACTIONABLE CONTENT</span>
+        </div>
+        <div class="timeline">
+          <div class="event">
+            <time>20 สิงหาคม 2569 · 14:00–15:30</time>
+            <h3>Free Webinar #179: เทคนิค Claude Code</h3>
+            <p>
+              เรียน CLAUDE.md, Hooks/Plugins และการ Review/Refactor โค้ดด้วย AI อย่างปลอดภัย ผ่าน
+              Zoom · ฟรี
+            </p>
+            <div class="citation"><b>[A1]</b> IMC Institute</div>
+          </div>
+          <div class="event">
+            <time>26 สิงหาคม 2569</time>
+            <h3>Claude Cowork in Action for Everyone</h3>
+            <p>
+              หลักสูตรใช้ Claude Cowork กับงานซ้ำและ workflow · 4,900 บาทก่อน VAT · แถม Claude Pro 1
+              เดือน
+            </p>
+            <div class="citation"><b>[A4]</b> IMC Institute</div>
+          </div>
+          <div class="event">
+            <time>28 สิงหาคม 2569</time>
+            <h3>ChatGPT Work for Everyone</h3>
+            <p>
+              หลักสูตรใช้ AI กับเอกสาร ข้อมูล และการสื่อสาร · 4,900 บาทก่อน VAT · แถม ChatGPT Pro 1
+              เดือน
+            </p>
+            <div class="citation"><b>[A4]</b> IMC Institute</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid2 section">
+        <article class="card">
+          <div class="account-head">
+            <div>
+              <h3>Company mailbox</h3>
+              <div class="address">atiwat@aquilastudio.net</div>
+            </div>
+            <span class="label info">4 received · 24h</span>
+          </div>
+          <p class="account-note">
+            ภาพรวม: มีเนื้อหา 3 กลุ่ม — security alert 1, training promotion 2 จาก IMC และ
+            product/workflow promotion 1 จาก Atlassian
+          </p>
+          <div class="mail">
+            <span class="label urgent">SECURITY</span>
+            <div class="mail-head">
+              <div>
+                <h3>การแจ้งเตือนความปลอดภัย</h3>
+                <div class="from">Google &lt;no-reply@accounts.google.com&gt;</div>
+              </div>
+              <div class="date">03 Aug · 09:51 GMT</div>
+            </div>
+            <p class="summary">
+              Google พบ login ใหม่บน Mac และมีลิงก์ให้ตรวจสอบกิจกรรมความปลอดภัย หากไม่ใช่การ login
+              ของคุณให้ดำเนินการป้องกันบัญชี
+            </p>
+            <div class="citation">
+              <b>[A3]</b> msg 19fc708fc2e10a56 · query <code>newer_than:1d -from:me</code>
+            </div>
+          </div>
+          <div class="mail">
+            <span class="label action">WEBINAR</span>
+            <div class="mail-head">
+              <div>
+                <h3>เทคนิค Claude Code ที่ Developer มือโปรใช้</h3>
+                <div class="from">IMC Institute &lt;contact@imcinstitute.com&gt;</div>
+              </div>
+              <div class="date">04 Aug · 08:05 +0700</div>
+            </div>
+            <p class="summary">
+              สอนตั้งค่า CLAUDE.md, ใช้ Hooks/Plugins ให้ AI ทำงานอัตโนมัติในทีม และ review/refactor
+              โค้ดอย่างปลอดภัย
+            </p>
+            <div class="takeaway">
+              <b>Takeaway:</b> เกี่ยวข้องโดยตรงกับงาน QCH-Hermes/AI coding และเป็นอีเมลเดียวที่มี
+              event ฟรีชัดเจน
+            </div>
+            <div class="citation">
+              <b>[A1]</b> msg 19fca4decee81743 · query <code>newer_than:1d -from:me</code>
+            </div>
+          </div>
+          <div class="mail">
+            <span class="label learn">COURSE OFFER</span>
+            <div class="mail-head">
+              <div>
+                <h3>Claude Cowork + ChatGPT Work for Everyone</h3>
+                <div class="from">IMC Institute &lt;contact@imcinstitute.com&gt;</div>
+              </div>
+              <div class="date">03 Aug · 13:44 +0700</div>
+            </div>
+            <p class="summary">
+              2 หลักสูตรเน้นเอกสาร ข้อมูล อีเมล ปฏิทิน และ workflow ที่ทำซ้ำได้จริง ราคา 4,900
+              บาทต่อหลักสูตรก่อน VAT
+            </p>
+            <div class="takeaway">
+              <b>Decision:</b> พิจารณาความคุ้มค่าก่อนจ่ายเงิน — webinar
+              ฟรีอาจช่วยประเมินเนื้อหาก่อนได้
+            </div>
+            <div class="citation">
+              <b>[A4]</b> msg 19fc65d9f1d8b108 · query <code>newer_than:1d -from:me</code>
+            </div>
+          </div>
+          <div class="mail">
+            <span class="label info">PRODUCT UPDATE</span>
+            <div class="mail-head">
+              <div>
+                <h3>Focus on building, let Jira handle the rest</h3>
+                <div class="from">Atlassian &lt;info@e.atlassian.com&gt;</div>
+              </div>
+              <div class="date">03 Aug · 14:05 -0600</div>
+            </div>
+            <p class="summary">
+              แนะนำ Jira AI agents สำหรับ technical planning, PR review, สร้าง work item จาก
+              Slack/email/Confluence และสร้าง workflow ด้วยภาษาธรรมชาติ
+            </p>
+            <div class="takeaway">
+              <b>Insight:</b> เป็น product marketing; น่าสนใจถ้าทีมต้องการลดงาน Jira ที่ทำซ้ำ
+              แต่ยังไม่มี request หรือ deadline ในเมล
+            </div>
+            <div class="citation">
+              <b>[A2]</b> msg 19fc93b2e9749d23 · query <code>newer_than:1d -from:me</code>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="account-head">
+            <div>
+              <h3>Personal mailbox</h3>
+              <div class="address">atiwat.seenark.19@gmail.com</div>
+            </div>
+            <span class="label ok">0 received · 24h</span>
+          </div>
+          <p class="account-note">
+            ไม่มี received/sent ใน 24 ชั่วโมงล่าสุด จึงใช้ 2 ฉบับย้อนหลัง 7
+            วันเพื่อให้เห็นบริบทของบัญชีนี้
+          </p>
+          <div class="mail">
+            <span class="label info">AI PRICING</span>
+            <div class="mail-head">
+              <div>
+                <h3>New: Lower GPT-5.6 pricing and Fast mode for Sol</h3>
+                <div class="from">OpenAI &lt;noreply@email.openai.com&gt;</div>
+              </div>
+              <div class="date">30 Jul · 23:04 UTC</div>
+            </div>
+            <p class="summary">
+              OpenAI แจ้งว่า GPT-5.6 Luna ลดราคา 80%, GPT-5.6 Terra ลดราคา 20% และเพิ่ม Fast mode
+              สำหรับ API customers
+            </p>
+            <div class="takeaway">
+              <b>Insight:</b> เป็นสัญญาณด้านต้นทุน/ความเร็วของ AI API มากกว่างานที่ต้องตอบกลับ
+            </div>
+            <div class="citation">
+              <b>[B1]</b> msg 19fb545f89bdd712 · query <code>newer_than:7d</code>
+            </div>
+          </div>
+          <div class="mail">
+            <span class="label learn">LEARNING</span>
+            <div class="mail-head">
+              <div>
+                <h3>5-Day AI Agents: Vibe Coding Intensive สำเร็จ</h3>
+                <div class="from">Kaggle &lt;no-reply@kaggle.com&gt;</div>
+              </div>
+              <div class="date">30 Jul · 09:00 -0700</div>
+            </div>
+            <p class="summary">
+              Kaggle สรุปว่ามีผู้เรียนกว่า 350,000 คน ครอบคลุม vibe coding, software lifecycle,
+              multi-agent systems, ADK, MCP, security/evaluation และ deployment
+            </p>
+            <div class="takeaway">
+              <b>Takeaway:</b> เนื้อหาหลักสูตรเปิดเป็น Kaggle Learn Guide
+              เหมาะสำหรับเก็บเป็นแหล่งเรียนรู้แบบ self-paced
+            </div>
+            <div class="citation">
+              <b>[B2]</b> msg 19fb3c125980eab7 · query <code>newer_than:7d</code>
+            </div>
+          </div>
+          <div class="empty" style="margin-top: 12px">
+            ช่วง 24 ชั่วโมง: ไม่พบ received และไม่พบ sent
+          </div>
+        </article>
+      </section>
+
+      <section class="card section">
+        <div class="section-head">
+          <div>
+            <h2>สิ่งที่ไม่พบ</h2>
+            <p>ช่วยป้องกันการตีความเกินข้อมูล</p>
+          </div>
+        </div>
+        <div class="grid3">
+          <div>
+            <span class="label ok">NO OUTBOUND</span>
+            <p style="font-size: 13px">
+              ไม่พบอีเมลที่ส่งออกจากทั้ง 2 บัญชีใน 24 ชั่วโมง จึงยังไม่มี follow-up จาก sent mailbox
+            </p>
+          </div>
+          <div>
+            <span class="label ok">NO PERSONAL 24H</span>
+            <p style="font-size: 13px">
+              ไม่พบเมลใหม่ใน personal Gmail ช่วง 24 ชั่วโมง ไม่ได้แปลว่าบัญชีเสีย เพราะ query
+              ย้อนหลัง 7 วันอ่านได้ 2 ฉบับ
+            </p>
+          </div>
+          <div>
+            <span class="label info">NO HIDDEN CLAIMS</span>
+            <p style="font-size: 13px">
+              Insight ในหน้านี้อิงจาก subject/body ที่อ่านได้จริง และผูกกับ Gmail message ID ทุกฉบับ
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card section">
+        <div class="section-head">
+          <div>
+            <h2>Citations & method</h2>
+            <p>ใช้ตรวจย้อนกลับไปยัง Gmail message ผ่าน MCP gateway</p>
+          </div>
+        </div>
+        <div class="citation">
+          <b>[A1]</b> atiwat@aquilastudio.net · 19fca4decee81743 · IMC webinar ·
+          <code>newer_than:1d -from:me</code><br /><b>[A2]</b> atiwat@aquilastudio.net ·
+          19fc93b2e9749d23 · Atlassian Jira · <code>newer_than:1d -from:me</code><br /><b>[A3]</b>
+          atiwat@aquilastudio.net · 19fc708fc2e10a56 · Google security alert ·
+          <code>newer_than:1d -from:me</code><br /><b>[A4]</b> atiwat@aquilastudio.net ·
+          19fc65d9f1d8b108 · IMC courses · <code>newer_than:1d -from:me</code><br /><b>[B1]</b>
+          atiwat.seenark.19@gmail.com · 19fb545f89bdd712 · OpenAI pricing ·
+          <code>newer_than:7d</code> (ไม่พบใน 24h)<br /><b>[B2]</b> atiwat.seenark.19@gmail.com ·
+          19fb3c125980eab7 · Kaggle AI Agents · <code>newer_than:7d</code> (ไม่พบใน 24h)
+        </div>
+        <p class="method">
+          ค้นหา received ด้วย <code>newer_than:1d -from:me</code> และ sent ด้วย
+          <code>newer_than:1d from:me</code> แยกต่อ mailbox; ใช้ <code>newer_than:7d</code> เป็น
+          context ของ personal mailbox เมื่อผล 24 ชั่วโมงเป็นศูนย์
+        </p>
+      </section>
+      <footer class="footer">
+        QCH-Hermes · content-first briefing · generated from authorized mailbox data · no tokens
+        included
+      </footer>
+    </main>
+  </body>
+</html>

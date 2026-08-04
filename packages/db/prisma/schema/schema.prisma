@@ -8,3 +8,48 @@ generator client {
 datasource db {
   provider = "sqlite"
 }
+
+model OAuthState {
+  id           String   @id @default(cuid())
+  stateHash    String   @unique
+  codeVerifier String
+  sessionId    String?
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+}
+
+model Session {
+  id             String   @id @default(cuid())
+  tokenHash      String   @unique
+  ownerGoogleSub String
+  ownerEmail     String
+  createdAt      DateTime @default(now())
+  lastSeenAt     DateTime @default(now())
+  expiresAt      DateTime
+}
+
+model Mailbox {
+  id                       String    @id @default(cuid())
+  ownerGoogleSub           String
+  googleSub                String    @unique
+  email                    String
+  displayName              String?
+  refreshTokenCiphertext   String
+  refreshTokenIv           String
+  grantedScopes            String
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  revokedAt                DateTime?
+}
+
+model AuditEvent {
+  id             String   @id @default(cuid())
+  actorGoogleSub String
+  action         String
+  mailboxId      String?
+  metadata       String?
+  createdAt      DateTime @default(now())
+
+  @@index([actorGoogleSub, createdAt])
+  @@index([mailboxId, createdAt])
+}

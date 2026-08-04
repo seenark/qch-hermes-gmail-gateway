@@ -1,20 +1,31 @@
 name: qch-hermes
 
 services:
-  web:
+  app:
     build:
       context: .
-      dockerfile: apps/web/Dockerfile
-      args:
-        VITE_SERVER_URL: http://localhost:3000
+      dockerfile: Dockerfile
     init: true
     ports:
-      - "3001:80"
+      - "3300:3300"
     env_file:
-      - path: apps/web/.env
-        required: false
+      - path: apps/server/.env
+        required: true
+    environment:
+      DATABASE_URL: file:/data/local.db
+      CORS_ORIGIN: http://localhost:3300
+      PORT: 3300
+      WEB_DIST_DIR: /app/public
+    volumes:
+      - ./data:/data
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "fetch('http://127.0.0.1:3300/healthz').then(r => { if (!r.ok) process.exit(1) })",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5

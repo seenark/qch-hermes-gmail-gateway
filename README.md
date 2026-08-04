@@ -1,131 +1,302 @@
-# qch-hermes
+# QCH-Hermes Gmail Gateway
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines React, TanStack Router, Elysia, and more.
+QCH-Hermes เป็น Gmail gateway แบบ self-hosted สำหรับเชื่อมต่อ Gmail หลาย mailbox ผ่าน OAuth แบบ explicit consent แล้วเปิดความสามารถอ่านอีเมลให้กับ web UI และ MCP client ผ่าน backend authorization boundary เดียวกัน
 
-## Features
+## โปรเจคนี้ทำอะไร
 
-- **TypeScript** - For type safety and improved developer experience
-- **TanStack Router** - File-based routing with full type safety
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Shared UI package** - shadcn/ui primitives live in `packages/ui`
-- **Elysia** - Type-safe, high-performance framework
-- **Bun** - Runtime environment
-- **Prisma** - TypeScript-first ORM
-- **SQLite/Turso** - Database engine
-- **Vite+** - Unified Vite toolchain, workspace task runner, linting, and formatting
+- เชื่อมต่อ Gmail ได้หลายบัญชี โดยให้แต่ละบัญชีอนุมัติ OAuth แยกกัน
+- ใช้ Gmail scope แบบ least privilege เริ่มต้นที่ `gmail.readonly`
+- เก็บ Gmail refresh token แบบเข้ารหัส AES-GCM ใน SQLite ฝั่ง server
+- ตรวจ session, mailbox ownership และสิทธิ์ก่อนอ่าน Gmail ทุกครั้ง
+- มี MCP JSON-RPC endpoint สำหรับ `gmail_search` และ `gmail_get`
+- บังคับให้ทุก Gmail MCP tool ระบุ `mailboxId`
+- รองรับ disconnect/revoke mailbox
+- เสิร์ฟ web UI, API, OAuth และ MCP จาก **single Docker container** เดียว
 
-## Getting Started
+โปรเจคนี้ยังเป็น gateway ขนาดเล็ก ไม่ใช่ Google Workspace Domain-Wide Delegation และไม่ได้ให้สิทธิ์อ่าน mailbox ของทั้งองค์กรโดยอัตโนมัติ แต่ละ mailbox ต้องได้รับ consent เอง เว้นแต่ภายหลังจะติดตั้ง Workspace Domain-Wide Delegation อย่างถูกต้องโดย Super Admin
 
-First, install the dependencies:
+## Architecture
+
+```text
+Browser ───────────────┐
+                       │ same origin :3300
+MCP client ── Bearer ──┤
+                       ▼
+                 Bun + Elysia server
+                 ├── Web UI static files
+                 ├── OAuth/session boundary
+                 ├── Gmail gateway
+                 └── MCP JSON-RPC /mcp
+                       │
+                       ├── data/local.db
+                       │     └── encrypted refresh tokens
+                       └── Gmail API
+```
+
+## Requirements
+
+- Docker Desktop with Docker Compose
+- Google Cloud project
+- Gmail API enabled
+- Google OAuth Web application client
+- OAuth redirect URI ที่ตรงกันทุกตัวอักษร
+
+ไม่จำเป็นต้องติดตั้ง Bun เพื่อใช้งาน runtime แบบ Docker
+
+## Google OAuth setup
+
+ใน Google Cloud Console:
+
+1. Enable Gmail API
+2. Configure OAuth consent screen
+3. Create OAuth Client ID ประเภท Web application
+4. เพิ่ม redirect URI:
+
+```text
+http://localhost:3300/oauth/google/callback
+```
+
+5. ถ้า OAuth app ยังอยู่ใน Testing ให้เพิ่ม Google accounts ที่จะใช้เป็น test users
+
+Production ควรใช้ domain policy จริงและห้ามใช้ development bypass:
+
+```env
+NODE_ENV=production
+ALLOW_ANY_VERIFIED_GOOGLE_ACCOUNT=false
+GOOGLE_ALLOWED_DOMAIN=company.example
+```
+
+การอยู่ใน company domain อย่างเดียวไม่ถือเป็น authorization; ผู้ใช้แต่ละคนยังต้อง approve OAuth consent
+
+## Local Docker setup: single container
+
+### 1. เตรียม environment
+
+```bash
+cp apps/server/.env.docker.example apps/server/.env
+```
+
+แก้ค่าใน `apps/server/.env`:
+
+```env
+GOOGLE_OAUTH_CLIENT_ID=...
+GOOGLE_OAUTH_CLIENT_SECRET=...
+GOOGLE_OAUTH_REDIRECT_URI=http://localhost:3300/oauth/google/callback
+GOOGLE_ALLOWED_DOMAIN=company.example
+TOKEN_ENCRYPTION_KEY=...
+MCP_GATEWAY_KEY=...
+```
+
+สร้าง random secrets ตัวอย่าง:
+
+```bash
+openssl rand -base64 32 | tr '+/' '-_' | tr -d '='
+openssl rand -base64 48 | tr '+/' '-_' | tr -d '='
+```
+
+development-only ถ้าต้องการทดสอบ Gmail ส่วนตัว:
+
+```env
+NODE_ENV=development
+ALLOW_ANY_VERIFIED_GOOGLE_ACCOUNT=true
+```
+
+ห้ามใช้ค่านี้ใน production
+
+ตั้ง permission ของไฟล์ลับ:
+
+```bash
+chmod 600 apps/server/.env
+```
+
+### 2. เตรียม database
+
+Docker Compose bind-mount database ที่:
+
+```text
+./data:/data
+```
+
+container ใช้:
+
+```text
+DATABASE_URL=file:/data/local.db
+```
+
+ถ้ามีฐานข้อมูลเดิมที่ root project ให้ย้ายครั้งแรกแบบไม่ overwrite database ที่มีอยู่แล้ว:
+
+```bash
+mkdir -p data
+test -e data/local.db || cp local.db data/local.db
+chmod 700 data
+chmod 600 data/local.db
+```
+
+### 3. Build และ start
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+Single container นี้จะเปิด:
+
+```text
+Web UI:       http://localhost:3300
+API:          http://localhost:3300
+OAuth start:  http://localhost:3300/oauth/google/start
+MCP:          http://localhost:3300/mcp
+```
+
+ตรวจสถานะ:
+
+```bash
+docker compose ps
+curl http://localhost:3300/healthz
+```
+
+ควรได้:
+
+```text
+OK
+```
+
+ดู logs:
+
+```bash
+docker compose logs -f app
+```
+
+หยุด container โดยรักษา database:
+
+```bash
+docker compose down
+```
+
+อย่าใช้ `docker compose down -v` หากยังต้องการรักษาข้อมูล volume
+
+## เชื่อมต่อ Gmail
+
+1. เปิด `http://localhost:3300`
+2. กด **เชื่อมต่อ Gmail**
+3. เลือก Google account ที่ต้องการ
+4. ตรวจสอบ OAuth consent และ approve scope ที่ร้องขอ
+5. ทำซ้ำสำหรับ mailbox อื่น
+6. หลัง callback สำเร็จ mailbox จะปรากฏใน web UI
+
+ระบบเก็บเฉพาะ metadata ที่จำเป็นและ encrypted refresh token ฝั่ง server ไม่ส่ง refresh token ไป browser หรือ MCP client
+
+การ disconnect จะทำให้ mailbox ไม่สามารถถูกใช้ผ่าน session/MCP ต่อ และเปิดทางให้ OAuth ใหม่สำหรับ mailbox นั้น
+
+## Gmail credentials และ persistence
+
+ใน SQLite ตาราง `Mailbox` จะเก็บ ciphertext และ IV ของ refresh token:
+
+```text
+refreshTokenCiphertext
+refreshTokenIv
+grantedScopes
+```
+
+`TOKEN_ENCRYPTION_KEY` อยู่นอก database และไม่อยู่ใน Docker image โดย Compose inject จาก `apps/server/.env`
+
+ต้อง backup ทั้งสองอย่างแยกกัน:
+
+1. `data/local.db`
+2. `TOKEN_ENCRYPTION_KEY`
+
+ถ้า database ยังอยู่แต่ encryption key หาย จะถอดรหัส refresh token เดิมไม่ได้
+
+ห้ามเก็บ secret ใน:
+
+- frontend หรือ `localStorage`
+- URL หรือ query string
+- committed file
+- Dockerfile หรือ Docker image layer
+- logs
+
+## MCP connection
+
+MCP endpoint:
+
+```text
+http://localhost:3300/mcp
+```
+
+ใช้ header:
+
+```text
+Authorization: Bearer <MCP_GATEWAY_KEY>
+Content-Type: application/json
+```
+
+MCP methods ที่มี:
+
+- `initialize`
+- `tools/list`
+- `tools/call` สำหรับ `gmail_search`
+- `tools/call` สำหรับ `gmail_get`
+
+ทุก tool ต้องส่ง `mailboxId` ที่ได้จาก authenticated mailbox listing; ห้ามให้ MCP client ส่ง refresh token หรือ Google client secret
+
+ตัวอย่าง shape ของ tool arguments:
+
+```json
+{
+  "mailboxId": "mailbox-id-from-the-server",
+  "query": "newer_than:1d"
+}
+```
+
+สำหรับ `gmail_get` ให้ส่ง `mailboxId` และ `messageId`
+
+## Development without Docker
+
+Docker เป็นวิธีรันหลักที่แนะนำ แต่ยังสามารถทำ development แยก process ได้:
 
 ```bash
 bun install
-```
-
-## Database Setup
-
-This project uses SQLite with Prisma.
-
-1. Start the local SQLite database (optional):
-
-```bash
-bun run db:local
-```
-
-2. Update your `.env` file in the `apps/server` directory with the appropriate connection details if needed.
-
-3. Apply the schema to your database:
-
-```bash
+bun run db:generate
 bun run db:push
-```
-
-Then, run the development server:
-
-```bash
 bun run dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
-The API is running at [http://localhost:3000](http://localhost:3000).
+โหมดนี้ใช้ web dev server และ API แยก port ตาม environment ของโปรเจค ส่วนการใช้งานจริง local ให้ใช้ Docker Compose single container ตามขั้นตอนด้านบน
 
-## UI Customization
-
-React web apps in this stack share shadcn/ui primitives through `packages/ui`.
-
-- Change design tokens and global styles in `packages/ui/src/styles/globals.css`
-- Update shared primitives in `packages/ui/src/components/*`
-- Adjust shadcn aliases or style config in `packages/ui/components.json` and `apps/web/components.json`
-
-### Add more shared components
-
-Run this from the project root to add more primitives to the shared UI package:
+## Verification commands
 
 ```bash
-npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
+bun run lint
+bun run check
+bun run build
+git diff --check
+docker compose config --quiet
+docker compose build
 ```
 
-Import shared components like this:
+## Project structure
 
-```tsx
-import { Button } from "@qch-hermes/ui/components/button";
+```text
+apps/server/                 Elysia API, OAuth, Gmail gateway, MCP
+apps/web/                    React/TanStack Router UI
+packages/db/                 Prisma schema and SQLite adapter
+packages/env/                server/web environment validation
+Dockerfile                   single-container build
+docker-compose.yml           runtime, bind mount, healthcheck
+data/local.db                ignored persistent SQLite database
 ```
 
-### Add app-specific blocks
+## Security notes
 
-If you want to add app-specific blocks instead of shared primitives, run the shadcn CLI from `apps/web`.
+- ใช้ explicit OAuth consent ต่อ mailbox
+- ใช้ PKCE และ one-time OAuth state
+- ใช้ HTTP-only session cookie
+- ใช้ encrypted refresh token at rest
+- ใช้ exact-domain policy ใน production
+- development allow-any account ต้องไม่เปิดใน production
+- MCP ทุก operation ต้องผ่าน backend authorization
+- Google client secret, encryption key และ gateway key ต้องอยู่นอก Git และ image
 
-## Deployment
+## License / public repository note
 
-### Docker Compose
-
-- Target: web
-- Config: `docker-compose.yml` (app Dockerfiles live in `apps/*/Dockerfile`)
-- Build images: bun run docker:build
-- Start: bun run docker:up
-- Logs: bun run docker:logs
-- Stop: bun run docker:down
-
-Environment variables are read from each app's `.env` file (baked into web builds for public variables) and overridden in `docker-compose.yml` for container networking.
-
-For more details, see the guide on [Deploying with Docker Compose](https://www.better-t-stack.dev/docs/guides/docker).
-
-## Git Hooks and Formatting
-
-- Optional native Vite+ hooks: `bun run hooks:setup`
-- Docs: [Vite+ commit hooks](https://viteplus.dev/guide/commit-hooks)
-- Run checks: `bun run check`
-
-## Project Structure
-
-```
-qch-hermes/
-├── apps/
-│   ├── web/         # Frontend application (React + TanStack Router)
-│   └── server/      # Backend API (Elysia)
-├── packages/
-│   ├── ui/          # Shared shadcn/ui components and styles
-│   └── db/          # Database schema & queries
-```
-
-## Available Scripts
-
-- `bun run dev`: Start all applications in development mode
-- `bun run build`: Build all applications
-- `bun run dev:web`: Start only the web application
-- `bun run dev:server`: Start only the server
-- `bun run check-types`: Check TypeScript types across all apps
-- `bun run db:push`: Push schema changes to database
-- `bun run db:generate`: Generate database client/types
-- `bun run db:migrate`: Run database migrations
-- `bun run db:studio`: Open database studio UI
-- `bun run db:local`: Start the local SQLite database
-- `bun run check`: Run Vite+ format/lint checks and workspace TypeScript checks
-- `bun run lint`: Run Vite+ lint checks
-- `bun run format`: Run Vite+ formatting
-- `bun run staged`: Run Vite+ checks against staged files
-- `bun run hooks:setup`: Install Vite+ native Git hooks with `vp config`
-- `bun run docker:build`: Build the Docker Compose images
-- `bun run docker:up`: Build and start the Docker Compose stack
-- `bun run docker:logs`: Tail logs from the Docker Compose stack
-- `bun run docker:down`: Stop the Docker Compose stack
+ก่อน push public ให้ตรวจว่าไม่มี `.env`, database, token, client secret หรือ generated credential อยู่ใน Git และตรวจ `git status` กับ secret scan ทุกครั้ง
