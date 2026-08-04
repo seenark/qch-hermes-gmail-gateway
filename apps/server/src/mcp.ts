@@ -74,7 +74,7 @@ export async function handleMcp(request: Request): Promise<Response> {
     return rpc(message.id, {
       protocolVersion: "2025-03-26",
       capabilities: { tools: {} },
-      serverInfo: { name: "qch-hermes-gmail", version: "0.1.0" },
+      serverInfo: { name: "qch-hermes-gmail-gateway", version: "0.1.0" },
     });
   }
   if (message.method === "notifications/initialized") return new Response(null, { status: 202 });

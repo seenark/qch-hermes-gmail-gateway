@@ -1,10 +1,11 @@
-name: qch-hermes
+name: qch-hermes-gmail-gateway
 
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
+    image: hadesgod/qch-hermes-gmail-gateway:latest
     init: true
     ports:
       - "3300:3300"

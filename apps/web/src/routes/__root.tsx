@@ -14,11 +14,11 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
   head: () => ({
     meta: [
       {
-        title: "qch-hermes",
+        title: "QCH-Hermes Gmail Gateway",
       },
       {
         name: "description",
-        content: "qch-hermes is a web application",
+        content: "Self-hosted multi-account Gmail gateway with MCP access",
       },
     ],
     links: [

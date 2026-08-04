@@ -1,5 +1,5 @@
 {
-  "name": "qch-hermes",
+  "name": "qch-hermes-gmail-gateway",
   "private": true,
   "workspaces": {
     "packages": [
