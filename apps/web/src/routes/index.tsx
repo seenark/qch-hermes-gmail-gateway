@@ -3,6 +3,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { env } from "@qch-hermes/env/web";
 
+import { buildServerPath } from "../server-url";
+
 export const Route = createFileRoute("/")({
   component: HomeComponent,
 });
@@ -16,8 +18,10 @@ type Mailbox = {
   revokedAt: string | null;
 };
 
+const serverUrl = env.VITE_SERVER_URL;
+
 async function api(path: string, init?: RequestInit): Promise<Response> {
-  return fetch(`${env.VITE_SERVER_URL}${path}`, {
+  return fetch(buildServerPath(path, serverUrl), {
     ...init,
     credentials: "include",
     headers: { "content-type": "application/json", ...init?.headers },
@@ -91,12 +95,12 @@ function HomeComponent() {
           <div>
             <h2 className="text-xl font-medium">Mailbox ที่เชื่อมต่อแล้ว</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              MCP ต้องระบุ mailbox ID และ gateway จะตรวจสิทธิ์ทุก request
+              ทุก browser ที่ authenticate แล้วจะเห็น mailbox ที่ยังใช้งานได้ทั้งหมด และ MCP ต้องระบุ mailbox ID
             </p>
           </div>
           <a
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-            href={`${env.VITE_SERVER_URL}/oauth/google/start`}
+            href={buildServerPath("/oauth/google/start", serverUrl)}
           >
             {authenticated ? "เพิ่ม Gmail อีกบัญชี" : "เชื่อมต่อ Gmail"}
           </a>

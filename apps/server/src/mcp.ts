@@ -1,5 +1,5 @@
 import { requireMcpGatewayKey } from "./config";
-import { gmailGet, gmailSearch } from "./gmail-gateway";
+import { gmailGet, gmailSearch, listMcpMailboxes } from "./gmail-gateway";
 import { bearerToken, safeTokenEqual } from "./sessions";
 
 type JsonRpcRequest = {
@@ -32,6 +32,15 @@ const TOOLS = [
         messageId: { type: "string" },
       },
       required: ["mailboxId", "messageId"],
+    },
+  },
+  {
+    name: "gmail_list_mailboxes",
+    description: "List every connected, non-revoked Gmail mailbox available to this gateway.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      additionalProperties: false,
     },
   },
 ];
@@ -88,6 +97,15 @@ export async function handleMcp(request: Request): Promise<Response> {
     argumentsValue && typeof argumentsValue === "object"
       ? (argumentsValue as Record<string, unknown>)
       : {};
+
+  if (name === "gmail_list_mailboxes") {
+    const payload = { mailboxes: await listMcpMailboxes() };
+    return rpc(message.id, {
+      content: [{ type: "text", text: JSON.stringify(payload) }],
+      structuredContent: payload,
+    });
+  }
+
   const mailboxId = stringArg(args, "mailboxId");
   if (!name || !mailboxId) return rpcError(message.id, -32602, "name and mailboxId are required");
 

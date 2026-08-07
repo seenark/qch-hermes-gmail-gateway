@@ -7,7 +7,7 @@ ENV SKIP_ENV_VALIDATION=1
 ENV DATABASE_URL=file:/data/build.db
 ENV CORS_ORIGIN=http://localhost:3300
 ENV PORT=3300
-ENV VITE_SERVER_URL=http://localhost:3300
+# The combined image serves the web client and API from one origin in production.
 
 COPY . .
 RUN --mount=type=cache,target=/root/.bun/install/cache bun install --linker hoisted

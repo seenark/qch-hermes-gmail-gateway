@@ -17,16 +17,16 @@ export function requireOAuthConfig() {
       env.ALLOW_ANY_VERIFIED_GOOGLE_ACCOUNT === "true" && env.NODE_ENV !== "production",
   };
 
-  if (
-    !values.clientId ||
-    !values.clientSecret ||
-    !values.redirectUri ||
-    !values.allowedDomain ||
-    !values.encryptionKey
-  ) {
-    throw new Error(
-      "Google OAuth is not configured. Set GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_OAUTH_REDIRECT_URI, GOOGLE_ALLOWED_DOMAIN, and TOKEN_ENCRYPTION_KEY.",
-    );
+  const missing = [
+    !values.clientId && "GOOGLE_OAUTH_CLIENT_ID",
+    !values.clientSecret && "GOOGLE_OAUTH_CLIENT_SECRET",
+    !values.redirectUri && "GOOGLE_OAUTH_REDIRECT_URI",
+    !values.allowedDomain && "GOOGLE_ALLOWED_DOMAIN",
+    !values.encryptionKey && "TOKEN_ENCRYPTION_KEY",
+  ].filter((name): name is string => Boolean(name));
+
+  if (missing.length > 0) {
+    throw new Error(`Google OAuth is not configured. Missing: ${missing.join(", ")}`);
   }
 
   const encryptionKey = new Uint8Array(Buffer.from(values.encryptionKey as string, "base64url"));

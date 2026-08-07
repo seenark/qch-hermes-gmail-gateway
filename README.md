@@ -1,15 +1,15 @@
 # QCH-Hermes Gmail Gateway
 
-QCH-Hermes เป็น Gmail gateway แบบ self-hosted สำหรับเชื่อมต่อ Gmail หลาย mailbox ผ่าน OAuth แบบ explicit consent แล้วเปิดความสามารถอ่านอีเมลให้กับ web UI และ MCP client ผ่าน backend authorization boundary เดียวกัน
+QCH-Hermes เป็น Gmail gateway แบบ self-hosted สำหรับเชื่อมต่อหลาย mailbox ผ่าน OAuth แบบ explicit consent แล้วเปิดความสามารถอ่านอีเมลให้กับ web UI และ MCP client โดย mailbox ที่ยังไม่ถูก revoke จะใช้งานร่วมกันได้จากทุก browser session ที่ authenticate แล้วและจาก MCP ที่ใช้ gateway key ถูกต้อง
 
 ## โปรเจคนี้ทำอะไร
 
 - เชื่อมต่อ Gmail ได้หลายบัญชี โดยให้แต่ละบัญชีอนุมัติ OAuth แยกกัน
 - ใช้ Gmail scope แบบ least privilege เริ่มต้นที่ `gmail.readonly`
 - เก็บ Gmail refresh token แบบเข้ารหัส AES-GCM ใน SQLite ฝั่ง server
-- ตรวจ session, mailbox ownership และสิทธิ์ก่อนอ่าน Gmail ทุกครั้ง
-- มี MCP JSON-RPC endpoint สำหรับ `gmail_search` และ `gmail_get`
-- บังคับให้ทุก Gmail MCP tool ระบุ `mailboxId`
+- ตรวจ session สำหรับ web UI และตรวจว่า mailbox ยังไม่ถูก revoke ก่อนอ่าน Gmail
+- มี MCP JSON-RPC endpoint สำหรับ `gmail_search`, `gmail_get` และ `gmail_list_mailboxes`
+- บังคับให้ `gmail_search` และ `gmail_get` ระบุ `mailboxId`; MCP ใช้ mailbox ID ใดก็ได้ที่ยังไม่ถูก revoke
 - รองรับ disconnect/revoke mailbox
 - เสิร์ฟ web UI, API, OAuth และ MCP จาก **single Docker container** เดียว
 
@@ -248,6 +248,7 @@ GOOGLE_OAUTH_CLIENT_ID=ลูกค้าใส่ค่าจริง
 GOOGLE_OAUTH_CLIENT_SECRET=ลูกค้าใส่ค่าจริง
 GOOGLE_OAUTH_REDIRECT_URI=https://gmail.example.com/oauth/google/callback
 GOOGLE_ALLOWED_DOMAIN=customer.example.com
+CORS_ORIGIN=https://gmail.example.com
 TOKEN_ENCRYPTION_KEY=สร้างค่า random ใหม่
 MCP_GATEWAY_KEY=สร้างค่า random ใหม่
 ```
@@ -265,17 +266,19 @@ docker compose -f docker-compose.customer.yml up -d
 
 ```bash
 docker compose -f docker-compose.customer.yml ps
-curl -fsS http://localhost:3300/healthz
+curl -fsS http://localhost:8811/healthz
 ```
 
-เปิด web UI ที่ `http://localhost:3300` หรือ public HTTPS URL ของ reverse proxy
+เปิด web UI ที่ `http://localhost:8811` หรือ public HTTPS URL ของ reverse proxy
 
-ถ้า deploy หลัง reverse proxy ให้ใช้ HTTPS public URL ที่ proxy ส่งต่อมายัง container port `3300` และตั้งค่าใน `.env` ให้ตรงกัน:
+ถ้า deploy หลัง reverse proxy ให้ใช้ HTTPS public URL ที่ proxy ส่งต่อมายัง host/container port `8811` และตั้งค่าใน `.env` ให้ตรงกัน:
 
 ```env
 CORS_ORIGIN=https://gmail.example.com
 GOOGLE_OAUTH_REDIRECT_URI=https://gmail.example.com/oauth/google/callback
 ```
+
+`GOOGLE_OAUTH_REDIRECT_URI` คือ callback ที่ Google ใช้ ส่วน web UI ของ image นี้เรียก API และ OAuth แบบ same-origin จึงไม่ต้องตั้ง `VITE_SERVER_URL` ใน runtime `.env`.
 
 ### Option B: Docker CLI โดยตรง
 
@@ -361,8 +364,9 @@ MCP methods ที่มี:
 - `tools/list`
 - `tools/call` สำหรับ `gmail_search`
 - `tools/call` สำหรับ `gmail_get`
+- `tools/call` สำหรับ `gmail_list_mailboxes`
 
-ทุก tool ต้องส่ง `mailboxId` ที่ได้จาก authenticated mailbox listing; ห้ามให้ MCP client ส่ง refresh token หรือ Google client secret
+ทุก tool ต้องส่ง `mailboxId` ยกเว้น `gmail_list_mailboxes`; mailbox ID ได้จาก authenticated mailbox listing หรือเรียก `gmail_list_mailboxes` ผ่าน MCP ห้ามให้ MCP client ส่ง refresh token หรือ Google client secret
 
 ตัวอย่าง shape ของ tool arguments:
 

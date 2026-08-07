@@ -160,15 +160,8 @@ export async function completeGoogleOAuth(
     : null;
   const activeSession = session && session.expiresAt > new Date() ? session : null;
 
-  if (
-    existingMailbox &&
-    activeSession &&
-    existingMailbox.ownerGoogleSub !== activeSession.ownerGoogleSub
-  ) {
-    return failure(403, "This mailbox is already owned by another authorized operator");
-  }
-
-  const ownerGoogleSub = activeSession?.ownerGoogleSub ?? (identity.sub as string);
+  const actorGoogleSub = activeSession?.ownerGoogleSub ?? (identity.sub as string);
+  const ownerGoogleSub = existingMailbox?.ownerGoogleSub ?? actorGoogleSub;
   const encryptedRefreshToken = token.refresh_token
     ? await encryptSecret(token.refresh_token, config.encryptionKey)
     : null;
@@ -189,7 +182,6 @@ export async function completeGoogleOAuth(
         grantedScopes: token.scope ?? GMAIL_READONLY_SCOPE,
       },
       update: {
-        ownerGoogleSub,
         email: identity.email as string,
         revokedAt: null,
         ...(encryptedRefreshToken
@@ -203,7 +195,7 @@ export async function completeGoogleOAuth(
     });
     await tx.auditEvent.create({
       data: {
-        actorGoogleSub: ownerGoogleSub,
+        actorGoogleSub,
         action: existingMailbox ? "mailbox.reauthorized" : "mailbox.authorized",
         mailboxId: existingMailbox?.id,
         metadata: JSON.stringify({ email: identity.email, scopes: token.scope }),
@@ -213,7 +205,7 @@ export async function completeGoogleOAuth(
 
   const responseSession = activeSession
     ? { session: activeSession, token: undefined }
-    : await createSession(prisma, ownerGoogleSub, identity.email as string);
+    : await createSession(prisma, actorGoogleSub, identity.email as string);
   return redirect(
     `${WEB_AFTER_OAUTH}?gmail=connected`,
     responseSession.token
@@ -223,6 +215,7 @@ export async function completeGoogleOAuth(
 }
 
 export function oauthErrorResponse(error: unknown): Response {
-  console.error("Google OAuth error", error instanceof Error ? error.message : "unknown error");
+  const detail = error instanceof Error ? (error.stack ?? error.message) : String(error);
+  console.error("Google OAuth error", detail);
   return failure(500, "Google OAuth could not be completed");
 }

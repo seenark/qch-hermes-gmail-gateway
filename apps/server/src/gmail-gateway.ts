@@ -63,7 +63,7 @@ async function authorizedMailbox(
   if (!session) return null;
 
   const mailbox = await prisma.mailbox.findFirst({
-    where: { id: mailboxId, ownerGoogleSub: session.ownerGoogleSub, revokedAt: null },
+    where: { id: mailboxId, revokedAt: null },
     select: { id: true },
   });
   return mailbox ? { mailboxId: mailbox.id, actorGoogleSub: session.ownerGoogleSub } : null;
@@ -117,12 +117,9 @@ async function audit(
   });
 }
 
-export async function listMailboxes(request: Request): Promise<Response> {
-  const session = await getSession(prisma, request);
-  if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
-
-  const mailboxes = await prisma.mailbox.findMany({
-    where: { ownerGoogleSub: session.ownerGoogleSub, revokedAt: null },
+async function findActiveMailboxes(): Promise<MailboxSummary[]> {
+  return prisma.mailbox.findMany({
+    where: { revokedAt: null },
     orderBy: { createdAt: "asc" },
     select: {
       id: true,
@@ -133,7 +130,17 @@ export async function listMailboxes(request: Request): Promise<Response> {
       revokedAt: true,
     },
   });
-  return Response.json({ mailboxes });
+}
+
+export async function listMailboxes(request: Request): Promise<Response> {
+  const session = await getSession(prisma, request);
+  if (!session) return Response.json({ error: "Authentication required" }, { status: 401 });
+
+  return Response.json({ mailboxes: await findActiveMailboxes() });
+}
+
+export async function listMcpMailboxes(): Promise<MailboxSummary[]> {
+  return findActiveMailboxes();
 }
 
 export async function revokeMailbox(request: Request, mailboxId: string): Promise<Response> {
