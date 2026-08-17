@@ -30,6 +30,7 @@ const gmailSearchMock = mock(async () => Response.json({}));
 mock.module("./gmail-gateway", () => ({
   gmailGet: async () => Response.json({}),
   gmailSearch: gmailSearchMock,
+  gmailSend: async () => Response.json({ id: "sent-message" }),
   listMcpMailboxes: async () => mailboxSummaries,
 }));
 mock.module("./sessions", () => ({

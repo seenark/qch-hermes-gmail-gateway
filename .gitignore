@@ -52,6 +52,7 @@ coverage
 # Misc
 *.tgz
 *.db*
+graphify-out
 .cache
 tmp
 temp

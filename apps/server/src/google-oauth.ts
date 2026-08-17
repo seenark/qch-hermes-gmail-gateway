@@ -10,6 +10,7 @@ import {
 } from "./oauth";
 import {
   GMAIL_READONLY_SCOPE,
+  GMAIL_SEND_SCOPE,
   GOOGLE_IDENTITY_SCOPES,
   GOOGLE_TOKEN_ENDPOINT,
   GOOGLE_TOKENINFO_ENDPOINT,
@@ -107,7 +108,7 @@ export async function startGoogleOAuth(request: Request): Promise<Response> {
       redirectUri: config.redirectUri,
       state,
       codeChallenge: pkce.codeChallenge,
-      scopes: [...GOOGLE_IDENTITY_SCOPES, GMAIL_READONLY_SCOPE],
+      scopes: [...GOOGLE_IDENTITY_SCOPES, GMAIL_READONLY_SCOPE, GMAIL_SEND_SCOPE],
     }),
   );
 }
@@ -179,7 +180,7 @@ export async function completeGoogleOAuth(
         displayName: identity.email as string,
         refreshTokenCiphertext: encryptedRefreshToken?.ciphertext ?? "",
         refreshTokenIv: encryptedRefreshToken?.iv ?? "",
-        grantedScopes: token.scope ?? GMAIL_READONLY_SCOPE,
+        grantedScopes: token.scope ?? `${GMAIL_READONLY_SCOPE} ${GMAIL_SEND_SCOPE}`,
       },
       update: {
         email: identity.email as string,
@@ -190,7 +191,7 @@ export async function completeGoogleOAuth(
               refreshTokenIv: encryptedRefreshToken.iv,
             }
           : {}),
-        grantedScopes: token.scope ?? GMAIL_READONLY_SCOPE,
+        grantedScopes: token.scope ?? `${GMAIL_READONLY_SCOPE} ${GMAIL_SEND_SCOPE}`,
       },
     });
     await tx.auditEvent.create({

@@ -2,12 +2,14 @@ import prisma from "@qch-hermes/db";
 
 import {
   GMAIL_API_ENDPOINT,
+  GMAIL_SEND_SCOPE,
   GOOGLE_TOKEN_ENDPOINT,
   requireMcpGatewayKey,
   requireOAuthConfig,
 } from "./config";
 import { decryptSecret } from "./secrets";
 import { bearerToken, getSession, safeTokenEqual, type AuthenticatedSession } from "./sessions";
+import { encodeMimeHeader } from "./mime";
 
 interface GoogleRefreshResponse {
   access_token?: string;
@@ -56,6 +58,23 @@ async function getMailboxAccessToken(mailboxId: string): Promise<string> {
     config.encryptionKey,
   );
   return refreshAccessToken(refreshToken);
+}
+
+function hasScope(grantedScopes: string, scope: string): boolean {
+  return grantedScopes.split(/\s+/).includes(scope);
+}
+
+function encodeBase64Url(value: string): string {
+  return Buffer.from(value, "utf8")
+    .toString("base64")
+    .replaceAll("+", "-")
+    .replaceAll("/", "_")
+    .replace(/=+$/, "");
+}
+
+function validateHeaderValue(value: string, name: string): string {
+  if (/[\r\n]/.test(value)) throw new Error(`${name} must not contain newlines`);
+  return value.trim();
 }
 
 async function authorizedMailbox(
@@ -221,6 +240,70 @@ export async function gmailGet(
     );
 
   await audit(authorized.actorGoogleSub, authorized.mailboxId, "gmail.get", { messageId });
+  return Response.json({ mailboxId: authorized.mailboxId, ...payload });
+}
+
+export async function gmailSend(
+  request: Request,
+  mailboxId: string,
+  input: { to: string; subject: string; body: string; cc?: string; bcc?: string },
+  mcp = false,
+): Promise<Response> {
+  const authorized = mcp
+    ? await mcpAuthorized(request, mailboxId)
+    : await authorizedMailbox(request, mailboxId);
+  if (!authorized)
+    return Response.json(
+      { error: mcp ? "MCP authentication or mailbox authorization failed" : "Mailbox not found" },
+      { status: mcp ? 401 : 404 },
+    );
+
+  const mailbox = await prisma.mailbox.findUnique({
+    where: { id: authorized.mailboxId },
+    select: { email: true, grantedScopes: true },
+  });
+  if (!mailbox || !hasScope(mailbox.grantedScopes, GMAIL_SEND_SCOPE)) {
+    return Response.json(
+      { error: "Mailbox does not have Gmail send permission; reconnect it to grant gmail.send" },
+      { status: 403 },
+    );
+  }
+
+  const to = validateHeaderValue(input.to, "to");
+  const subject = validateHeaderValue(input.subject, "subject");
+  const cc = input.cc ? validateHeaderValue(input.cc, "cc") : undefined;
+  const bcc = input.bcc ? validateHeaderValue(input.bcc, "bcc") : undefined;
+  if (!to || !subject) throw new Error("to and subject are required");
+
+  const headers = [
+    `From: ${mailbox.email}`,
+    `To: ${to}`,
+    ...(cc ? [`Cc: ${cc}`] : []),
+    ...(bcc ? [`Bcc: ${bcc}`] : []),
+    `Subject: ${encodeMimeHeader(subject)}`,
+    "MIME-Version: 1.0",
+    'Content-Type: text/plain; charset="UTF-8"',
+    "Content-Transfer-Encoding: 8bit",
+  ];
+  const raw = encodeBase64Url(`${headers.join("\r\n")}\r\n\r\n${input.body}`);
+  const response = await gmailRequest(authorized.mailboxId, "/messages/send", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ raw }),
+  });
+  const payload = (await response.json()) as Record<string, unknown>;
+  if (!response.ok)
+    return Response.json(
+      { error: "Gmail send failed", details: payload },
+      { status: response.status },
+    );
+
+  await audit(authorized.actorGoogleSub, authorized.mailboxId, "gmail.send", {
+    to,
+    cc,
+    bcc,
+    subject,
+  });
   return Response.json({ mailboxId: authorized.mailboxId, ...payload });
 }
 

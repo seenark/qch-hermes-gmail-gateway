@@ -1,5 +1,5 @@
 import { requireMcpGatewayKey } from "./config";
-import { gmailGet, gmailSearch, listMcpMailboxes } from "./gmail-gateway";
+import { gmailGet, gmailSearch, gmailSend, listMcpMailboxes } from "./gmail-gateway";
 import { bearerToken, safeTokenEqual } from "./sessions";
 
 type JsonRpcRequest = {
@@ -41,6 +41,23 @@ const TOOLS = [
       type: "object",
       properties: {},
       additionalProperties: false,
+    },
+  },
+  {
+    name: "gmail_send",
+    description:
+      "Send a plain-text email from an authorized Gmail mailbox. Call only after the user has confirmed the exact recipients, subject, and body.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        mailboxId: { type: "string" },
+        to: { type: "string", description: "Recipient email address(es)" },
+        cc: { type: "string" },
+        bcc: { type: "string" },
+        subject: { type: "string" },
+        body: { type: "string" },
+      },
+      required: ["mailboxId", "to", "subject", "body"],
     },
   },
 ];
@@ -138,6 +155,18 @@ export async function handleMcp(request: Request): Promise<Response> {
         ),
         mailboxId,
         messageId,
+        true,
+      );
+    } else if (name === "gmail_send") {
+      const to = stringArg(args, "to");
+      const subject = stringArg(args, "subject");
+      const body = typeof args.body === "string" ? args.body : undefined;
+      if (!to || !subject || body === undefined)
+        return rpcError(message.id, -32602, "to, subject, and body are required");
+      result = await gmailSend(
+        request,
+        mailboxId,
+        { to, subject, body, cc: stringArg(args, "cc"), bcc: stringArg(args, "bcc") },
         true,
       );
     } else {
