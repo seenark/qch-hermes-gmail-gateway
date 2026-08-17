@@ -110,37 +110,42 @@ export async function handleMcp(request: Request): Promise<Response> {
   if (!name || !mailboxId) return rpcError(message.id, -32602, "name and mailboxId are required");
 
   let result: Response;
-  if (name === "gmail_search") {
-    const url = new URL("/mcp/gmail/search", request.url);
-    url.searchParams.set("mailboxId", mailboxId);
-    const query = stringArg(args, "q");
-    if (query) url.searchParams.set("q", query);
-    const max = typeof args.max === "number" ? String(args.max) : undefined;
-    if (max) url.searchParams.set("max", max);
-    result = await gmailSearch(
-      new Request(url.toString(), { headers: request.headers }),
-      mailboxId,
-      true,
-    );
-  } else if (name === "gmail_get") {
-    const messageId = stringArg(args, "messageId");
-    if (!messageId) return rpcError(message.id, -32602, "messageId is required");
-    result = await gmailGet(
-      new Request(
-        new URL(
-          `/mcp/gmail/messages/${encodeURIComponent(messageId)}?mailboxId=${encodeURIComponent(mailboxId)}`,
-          request.url,
-        ).toString(),
-        {
-          headers: request.headers,
-        },
-      ),
-      mailboxId,
-      messageId,
-      true,
-    );
-  } else {
-    return rpcError(message.id, -32602, `Unknown tool: ${name}`);
+  try {
+    if (name === "gmail_search") {
+      const url = new URL("/mcp/gmail/search", request.url);
+      url.searchParams.set("mailboxId", mailboxId);
+      const query = stringArg(args, "q");
+      if (query) url.searchParams.set("q", query);
+      const max = typeof args.max === "number" ? String(args.max) : undefined;
+      if (max) url.searchParams.set("max", max);
+      result = await gmailSearch(
+        new Request(url.toString(), { headers: request.headers }),
+        mailboxId,
+        true,
+      );
+    } else if (name === "gmail_get") {
+      const messageId = stringArg(args, "messageId");
+      if (!messageId) return rpcError(message.id, -32602, "messageId is required");
+      result = await gmailGet(
+        new Request(
+          new URL(
+            `/mcp/gmail/messages/${encodeURIComponent(messageId)}?mailboxId=${encodeURIComponent(mailboxId)}`,
+            request.url,
+          ).toString(),
+          {
+            headers: request.headers,
+          },
+        ),
+        mailboxId,
+        messageId,
+        true,
+      );
+    } else {
+      return rpcError(message.id, -32602, `Unknown tool: ${name}`);
+    }
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    return rpcError(message.id, -32000, detail);
   }
 
   const payload = await result.json();

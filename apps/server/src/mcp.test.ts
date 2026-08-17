@@ -25,9 +25,11 @@ type MailboxPayload = Omit<(typeof mailboxSummaries)[number], "createdAt"> & {
 mock.module("./config", () => ({
   requireMcpGatewayKey: () => "test-mcp-key",
 }));
+const gmailSearchMock = mock(async () => Response.json({}));
+
 mock.module("./gmail-gateway", () => ({
   gmailGet: async () => Response.json({}),
-  gmailSearch: async () => Response.json({}),
+  gmailSearch: gmailSearchMock,
   listMcpMailboxes: async () => mailboxSummaries,
 }));
 mock.module("./sessions", () => ({
@@ -100,5 +102,32 @@ describe("MCP global mailbox access", () => {
     const payload = (await response.json()) as { error: { code: number; message: string } };
     expect(payload.error.code).toBe(-32001);
     expect(payload.error.message).toBe("MCP authentication failed");
+  });
+
+  test("returns upstream mailbox errors as JSON-RPC errors", async () => {
+    gmailSearchMock.mockImplementationOnce(async () => {
+      throw new Error("invalid_grant");
+    });
+
+    const response = await handleMcp(
+      new Request("http://localhost/mcp", {
+        method: "POST",
+        headers: { authorization: "Bearer test-mcp-key", "content-type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 2,
+          method: "tools/call",
+          params: {
+            name: "gmail_search",
+            arguments: { mailboxId: "mailbox-one", q: "in:inbox" },
+          },
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    const payload = (await response.json()) as { error: { code: number; message: string } };
+    expect(payload.error.code).toBe(-32000);
+    expect(payload.error.message).toBe("invalid_grant");
   });
 });

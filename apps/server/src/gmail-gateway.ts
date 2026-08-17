@@ -15,6 +15,8 @@ interface GoogleRefreshResponse {
   error_description?: string;
 }
 
+const GOOGLE_REQUEST_TIMEOUT_MS = 20_000;
+
 export interface MailboxSummary {
   id: string;
   email: string;
@@ -35,6 +37,7 @@ async function refreshAccessToken(refreshToken: string): Promise<string> {
       refresh_token: refreshToken,
       grant_type: "refresh_token",
     }),
+    signal: AbortSignal.timeout(GOOGLE_REQUEST_TIMEOUT_MS),
   });
   const result = (await response.json()) as GoogleRefreshResponse;
   if (!response.ok || !result.access_token) {
@@ -98,7 +101,11 @@ async function gmailRequest(
   const headers = new Headers(init?.headers);
   headers.set("authorization", `Bearer ${accessToken}`);
   headers.set("accept", "application/json");
-  return fetch(`${GMAIL_API_ENDPOINT}/users/me${path}`, { ...init, headers });
+  return fetch(`${GMAIL_API_ENDPOINT}/users/me${path}`, {
+    ...init,
+    headers,
+    signal: init?.signal ?? AbortSignal.timeout(GOOGLE_REQUEST_TIMEOUT_MS),
+  });
 }
 
 async function audit(
